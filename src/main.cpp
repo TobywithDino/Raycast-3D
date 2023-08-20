@@ -6,7 +6,7 @@
 #define screenWidth 1024
 #define screenHeight 512
 #define FPS 60
-#define PI 3.141
+#define PI 3.141159
 #define PI2 PI/2
 #define PI3 3*PI/2
 
@@ -68,8 +68,6 @@ void drawPlayer2D(){
     rec.y = pPos.y - pHeight/2;
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderFillRect(renderer, &rec);// draw player
-    SDL_SetRenderDrawColor(renderer, 220, 220, 0, 255);
-    SDL_RenderDrawLine(renderer, pPos.x, pPos.y, pPos.x+pDMove.x*10, pPos.y+pDMove.y*10);// draw line of pDMove
 }
 
 void drawRays2D(){
@@ -78,6 +76,8 @@ void drawRays2D(){
     int dof=0,end=mapWidth,mx,my;
     for(int i=0;i<1;i++){
         //---Check Horizontal Lines---
+        float disH = 100000;
+        Vector2 hVec = pPos;
         //---Looking up---
         if(rAngle > PI) {ry = (((int)pPos.y>>6)<<6) - 0.0001;rx = pPos.x - (pPos.y - ry)/tan(pAngle);yo = -64;xo = -64/tan(pAngle);} 
         //---Looking down---
@@ -88,15 +88,15 @@ void drawRays2D(){
             mx = ((int)rx>>6);
             my = ((int)ry>>6);
             int tmp = my*mapWidth+mx;
-            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;}
+            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;hVec=Vector2(rx,ry);disH=Vector2::getDist(pPos,hVec);}
             else {rx += xo;ry += yo;}
             dof++;
         }
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderDrawLine(renderer, pPos.x, pPos.y, rx, ry);// draw ray on the horizontal line
 
         //---Check Vertical Lines---
         dof=0;
+        float disV = 100000;
+        Vector2 vVec = pPos;
         //---Looking left---
         if(rAngle > PI2 && rAngle < PI3) {rx = (((int)pPos.x>>6)<<6) - 0.0001;ry = pPos.y - (pPos.x - rx)*tan(pAngle);xo = -64;yo = -64*tan(pAngle);} 
         //---Looking right---
@@ -107,15 +107,18 @@ void drawRays2D(){
             mx = ((int)rx>>6);
             my = ((int)ry>>6);
             int tmp = my*mapWidth+mx;
-            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;}
+            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;vVec=Vector2(rx,ry);disV=Vector2::getDist(pPos,vVec);}
             else {rx += xo;ry += yo;}
             dof++;
         }
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-        SDL_RenderDrawLine(renderer, pPos.x, pPos.y, rx, ry);// draw ray on the vertical line
+        // draw ray
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        if(disH < disV) SDL_RenderDrawLine(renderer, pPos.x, pPos.y, hVec.x, hVec.y);
+        if(disH >= disV) SDL_RenderDrawLine(renderer, pPos.x, pPos.y, vVec.x, vVec.y);
     }
 
 }
+
 
 void handleEvent(){
     SDL_Event event;
