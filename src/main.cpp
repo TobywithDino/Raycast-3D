@@ -9,16 +9,19 @@
 #define PI 3.141159
 #define PI2 PI/2
 #define PI3 3*PI/2
+#define D2R 0.01745
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 bool running = true;
 int lastFrame = 0;
+float deltaFrame = (1/(float)FPS);
 
 Vector2 pPos = Vector2(200,200);
 float pAngle = 0;
-float pSpeed = 3;
-float pAV = 0.07;
+float pSpeed = 150;
+float pAV = 3;
+int pPOV = 60;
 Vector2 pDMove = Vector2(0,0);
 bool left,right,up,down;
 
@@ -27,33 +30,33 @@ int worldMap[mapWidth*mapHeight]=
 {
     1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,1,
-    1,0,1,0,0,0,0,1,
-    1,0,0,0,0,0,0,1,
-    1,0,0,0,1,1,1,1,
-    1,1,0,0,0,0,0,1,
+    1,0,1,0,1,0,0,1,
+    1,0,1,0,1,0,1,1,
+    1,0,0,0,1,0,0,1,
+    1,1,1,0,1,1,0,1,
     1,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1
 };
 
-int mapBlockWidth = 64, mapBlockHeight  = 64;
+int mapBlockSize = 64;
 void drawMap2D(){
     for(int i=0;i<mapHeight*mapWidth;i++){
         if(worldMap[i] == 0) {
             SDL_Rect rec;
-            rec.w = mapBlockWidth-1;
-            rec.h = mapBlockHeight-1;
-            rec.x = mapBlockWidth*(i%mapWidth);
-            rec.y = mapBlockHeight*(i/mapWidth);
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            rec.w = mapBlockSize-1;
+            rec.h = mapBlockSize-1;
+            rec.x = mapBlockSize*(i%mapWidth);
+            rec.y = mapBlockSize*(i/mapWidth);
+            SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
             SDL_RenderFillRect(renderer, &rec);
         }
         if(worldMap[i] == 1){
             SDL_Rect rec;
-            rec.w = mapBlockWidth-1;
-            rec.h = mapBlockHeight-1;
-            rec.x = mapBlockWidth*(i%mapWidth);
-            rec.y = mapBlockHeight*(i/mapWidth);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            rec.w = mapBlockSize-1;
+            rec.h = mapBlockSize-1;
+            rec.x = mapBlockSize*(i%mapWidth);
+            rec.y = mapBlockSize*(i/mapWidth);
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
             SDL_RenderFillRect(renderer, &rec);
         }
     }
@@ -66,29 +69,34 @@ void drawPlayer2D(){
     rec.h = pHeight;
     rec.x = pPos.x - pWidth/2;
     rec.y = pPos.y - pHeight/2;
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 220,220,0,255);
     SDL_RenderFillRect(renderer, &rec);// draw player
+    SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+    SDL_RenderDrawLine(renderer,pPos.x,pPos.y,pPos.x+pDMove.x*10,pPos.y+pDMove.y*10);// draw dir
 }
 
-void drawRays2D(){
-    float rAngle = pAngle;
-    float rx=0,ry=0,xo=0,yo=0;
-    int dof=0,end=mapWidth,mx,my;
-    for(int i=0;i<1;i++){
+void drawRay3D(){
+    float rAngle = pAngle - (pPOV/2)*D2R;if(rAngle < 0) rAngle += 2*PI;if(rAngle > 2*PI) rAngle -= 2*PI;
+    int end = 8;
+    float dist = 0;
+    SDL_Rect rec;
+    for(int i=0;i<pPOV;i++){
+        float rx=0,ry=0,xo=0,yo=0;
+        int dof=0,mx,my;
         //---Check Horizontal Lines---
         float disH = 100000;
         Vector2 hVec = pPos;
-        //---Looking up---
-        if(rAngle > PI) {ry = (((int)pPos.y>>6)<<6) - 0.0001;rx = pPos.x - (pPos.y - ry)/tan(pAngle);yo = -64;xo = -64/tan(pAngle);} 
-        //---Looking down---
-        if(rAngle < PI) {ry = (((int)pPos.y>>6)<<6) + 64.0001;rx = pPos.x - (pPos.y - ry)/tan(pAngle);yo = 64;xo = 64/tan(pAngle);} 
-        //---Looking straight left or right---
+        //Looking up
+        if(rAngle > PI) {ry = (((int)pPos.y>>6)<<6) - 0.0001;rx = pPos.x - (pPos.y - ry)/tan(rAngle);yo = -64;xo = -64/tan(rAngle);} 
+        //Looking down
+        if(rAngle < PI) {ry = (((int)pPos.y>>6)<<6) + 64.0001;rx = pPos.x - (pPos.y - ry)/tan(rAngle);yo = 64;xo = 64/tan(rAngle);} 
+        //Looking straight left or right
         if(rAngle <= 0.0001 || rAngle == PI || rAngle == PI*2) {ry = pPos.y;rx = pPos.x;dof = end;}
         while(dof < end){
             mx = ((int)rx>>6);
             my = ((int)ry>>6);
             int tmp = my*mapWidth+mx;
-            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;hVec=Vector2(rx,ry);disH=Vector2::getDist(pPos,hVec);}
+            if(tmp >= 0 && tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;hVec=Vector2(rx,ry);disH=Vector2::getDist(pPos,hVec);}
             else {rx += xo;ry += yo;}
             dof++;
         }
@@ -97,24 +105,38 @@ void drawRays2D(){
         dof=0;
         float disV = 100000;
         Vector2 vVec = pPos;
-        //---Looking left---
-        if(rAngle > PI2 && rAngle < PI3) {rx = (((int)pPos.x>>6)<<6) - 0.0001;ry = pPos.y - (pPos.x - rx)*tan(pAngle);xo = -64;yo = -64*tan(pAngle);} 
-        //---Looking right---
-        if(rAngle < PI2 || rAngle > PI3) {rx = (((int)pPos.x>>6)<<6) + 64.0001;ry = pPos.y - (pPos.x - rx)*tan(pAngle);xo = 64;yo = 64*tan(pAngle);} 
-        //---Looking straight up or down---
-        if(rAngle == PI2|| rAngle == PI3) {ry = pPos.y;rx = pPos.x;dof = end;}
+        //Looking left
+        if(rAngle > PI2 && rAngle < PI3) {rx = (((int)pPos.x>>6)<<6) - 0.0001;ry = pPos.y - (pPos.x - rx)*tan(rAngle);xo = -64;yo = -64*tan(rAngle);} 
+        //Looking right
+        if(rAngle < PI2 || rAngle > PI3) {rx = (((int)pPos.x>>6)<<6) + 64.0001;ry = pPos.y - (pPos.x - rx)*tan(rAngle);xo = 64;yo = 64*tan(rAngle);} 
+        //Looking straight up or down
+        if(rAngle == PI2 || rAngle == PI3) {ry = pPos.y;rx = pPos.x;dof = end;}
         while(dof < end){
             mx = ((int)rx>>6);
             my = ((int)ry>>6);
             int tmp = my*mapWidth+mx;
-            if(tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;vVec=Vector2(rx,ry);disV=Vector2::getDist(pPos,vVec);}
+            if(tmp >= 0 && tmp <= mapHeight*mapWidth && worldMap[tmp] == 1) {dof = end;vVec=Vector2(rx,ry);disV=Vector2::getDist(pPos,vVec);}
             else {rx += xo;ry += yo;}
             dof++;
         }
-        // draw ray
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        if(disH < disV) SDL_RenderDrawLine(renderer, pPos.x, pPos.y, hVec.x, hVec.y);
-        if(disH >= disV) SDL_RenderDrawLine(renderer, pPos.x, pPos.y, vVec.x, vVec.y);
+        //--Draw 2D ray-- 
+        SDL_SetRenderDrawColor(renderer,0,255,0,255);
+        if(disH < disV) {SDL_RenderDrawLine(renderer, pPos.x, pPos.y, hVec.x, hVec.y);dist = disH;SDL_SetRenderDrawColor(renderer,0,150,0,255);}
+        if(disH >= disV) {SDL_RenderDrawLine(renderer, pPos.x, pPos.y, vVec.x, vVec.y);dist = disV;SDL_SetRenderDrawColor(renderer,0,200,0,255);}
+
+        //--Draw 3D wall--
+        float da = pAngle - rAngle; if(da < 0) {da+=2*PI;} if(da > 2*PI) {da-=2*PI;} dist = dist*cos(da);
+        int viewDepth = 10000;
+        float lineH = viewDepth/dist;if(lineH > screenHeight) {lineH = screenHeight;}
+        float lineO = ((screenHeight) - lineH)/2;
+        rec.w = (screenWidth/2)/pPOV;
+        rec.h = lineH;
+        rec.x = (screenWidth/2)+i*rec.w;
+        rec.y = lineO;
+        SDL_RenderFillRect(renderer, &rec);
+
+        //--Update ray angle
+        rAngle += D2R;if(rAngle > 2*PI) rAngle -= 2*PI;
     }
 
 }
@@ -146,11 +168,25 @@ void handleEvent(){
 }
 
 void update(){
-    if(left) {pAngle -= pAV; if(pAngle < 0) pAngle = 2*PI;}
-    if(right) {pAngle += pAV; if(pAngle > 2*PI) pAngle = 0;}
-    pDMove.x = pSpeed * cos(pAngle); pDMove.y = pSpeed * sin(pAngle);
-    if(up) {pPos = pPos + pDMove;}
-    if(down) {pPos = pPos - pDMove;}
+    if(left) {pAngle -= pAV*deltaFrame; if(pAngle < 0) {pAngle = 2*PI;}}
+    if(right) {pAngle += pAV*deltaFrame; if(pAngle > 2*PI) {pAngle = 0;}}
+    int pDX, pDY;
+    pDMove.x = pSpeed * cos(pAngle)*deltaFrame;if(pDMove.x > 0) pDX = pDMove.x + 5;else pDX = pDMove.x - 5;
+    pDMove.y = pSpeed * sin(pAngle)*deltaFrame;if(pDMove.y > 0) pDY = pDMove.y + 5;else pDY = pDMove.y - 5;
+    if(up) {
+        int tmp;
+        tmp = (pPos.x+pDX)/64 + mapWidth*(int)(pPos.y/64);
+        if(worldMap[tmp] == 0) pPos.x += pDMove.x;
+        tmp = pPos.x/64 + mapWidth*(int)((pPos.y+pDY)/64);
+        if(worldMap[tmp] == 0) pPos.y += pDMove.y;
+    }
+    if(down) {
+        int tmp;
+        tmp = (pPos.x-pDX)/64 + mapWidth*(int)(pPos.y/64);
+        if(worldMap[tmp] == 0) pPos.x -= pDMove.x;
+        tmp = pPos.x/64 + mapWidth*(int)((pPos.y-pDY)/64);
+        if(worldMap[tmp] == 0) pPos.y -= pDMove.y;
+    }
 }
 
 void render(){
@@ -158,8 +194,8 @@ void render(){
     SDL_RenderClear(renderer);
 
     drawMap2D();
+    drawRay3D();
     drawPlayer2D();
-    drawRays2D();
 
     SDL_RenderPresent(renderer);
 }
