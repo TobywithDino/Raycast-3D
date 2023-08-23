@@ -30,15 +30,56 @@ int worldMap[mapWidth*mapHeight]=
 {
     1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,1,
-    1,0,1,0,1,0,0,1,
-    1,0,1,0,1,0,1,1,
     1,0,0,0,1,0,0,1,
-    1,1,1,0,1,1,0,1,
+    1,0,0,0,1,0,1,1,
+    1,0,0,0,1,0,0,1,
+    1,0,0,0,1,1,0,1,
     1,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1
 };
 
-int mapBlockSize = 64;
+const int textureSize = 32;
+int allTextures[]=
+{
+    // test wall
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,1,1,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,1,1,1,1,1,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,1,1,1,1,1,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,1,1,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,
+
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+    0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,
+
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+    1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0, 
+};
+
+const int mapBlockSize = 64;
 void drawMap2D(){
     for(int i=0;i<mapHeight*mapWidth;i++){
         if(worldMap[i] == 0) {
@@ -79,7 +120,6 @@ void drawRay3D(){
     float rAngle = pAngle - (pPOV/2)*D2R;if(rAngle < 0) rAngle += 2*PI;if(rAngle > 2*PI) rAngle -= 2*PI;
     int end = 8;
     float dist = 0;
-    SDL_Rect rec;
     for(int i=0;i<pPOV;i++){
         float rx=0,ry=0,xo=0,yo=0;
         int dof=0,mx,my;
@@ -121,19 +161,34 @@ void drawRay3D(){
         }
         //--Draw 2D ray-- 
         SDL_SetRenderDrawColor(renderer,0,255,0,255);
-        if(disH < disV) {SDL_RenderDrawLine(renderer, pPos.x, pPos.y, hVec.x, hVec.y);dist = disH;SDL_SetRenderDrawColor(renderer,0,150,0,255);}
-        if(disH >= disV) {SDL_RenderDrawLine(renderer, pPos.x, pPos.y, vVec.x, vVec.y);dist = disV;SDL_SetRenderDrawColor(renderer,0,200,0,255);}
-
+        float shade = 1;
+        if(disH < disV) {dist = disH;rx = hVec.x;ry = hVec.y;}
+        if(disH >= disV) {dist = disV;rx = vVec.x;ry = vVec.y;shade=0.8;}
+        SDL_RenderDrawLine(renderer, pPos.x, pPos.y, rx, ry);
         //--Draw 3D wall--
-        float da = pAngle - rAngle; if(da < 0) {da+=2*PI;} if(da > 2*PI) {da-=2*PI;} dist = dist*cos(da);
-        int viewDepth = 10000;
-        float lineH = viewDepth/dist;if(lineH > screenHeight) {lineH = screenHeight;}
-        float lineO = ((screenHeight) - lineH)/2;
-        rec.w = (screenWidth/2)/pPOV;
-        rec.h = lineH;
-        rec.x = (screenWidth/2)+i*rec.w;
-        rec.y = lineO;
-        SDL_RenderFillRect(renderer, &rec);
+        float da = pAngle - rAngle; if(da < 0) {da+=2*PI;} if(da > 2*PI) {da-=2*PI;} dist = dist*cos(da); //fix fish eye
+        float lineH = (mapBlockSize*screenHeight/dist); //get vertical line height
+        float tyStep = textureSize / lineH;
+        float tyOffset = 0;
+        if(lineH > screenHeight) {tyOffset = (lineH-screenHeight)/2;lineH = screenHeight;} //clip line height if it's too high
+        float lineO = ((screenHeight) - lineH)/2; //get offset of line
+
+        float ty = tyStep*tyOffset;
+        float tx = (int)(rx*((float)textureSize/mapBlockSize))%textureSize;if(rAngle < PI) tx = (textureSize-1) - tx;
+        if(shade != 1){
+            tx = (int)(ry*((float)textureSize/mapBlockSize))%textureSize;if(rAngle > PI2 && rAngle < PI3) tx = (textureSize-1) - tx;
+        }
+        for(int j=0;j<lineH;j++){
+            int c = allTextures[(int)ty*textureSize+(int)tx] * 255 * shade;
+            SDL_SetRenderDrawColor(renderer,c,c,c,255);
+            SDL_Rect rec;
+            rec.w = (screenWidth/2)/pPOV;
+            rec.h = 1;
+            rec.x = (screenWidth/2)+i*rec.w;
+            rec.y = lineO+j;
+            SDL_RenderFillRect(renderer, &rec);
+            ty += tyStep;
+        }
 
         //--Update ray angle
         rAngle += D2R;if(rAngle > 2*PI) rAngle -= 2*PI;
